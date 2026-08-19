@@ -42,7 +42,7 @@ pip install -r requirements-ml.txt
 # Önce görsel kontrol: 50 tane bozulmamış plaka
 python3 tools/synth_plates.py --count 50 --out data/preview --clean --width 520 --height 110
 
-# Sonra gerçek eğitim seti
+# Eğitim seti
 python3 tools/synth_plates.py --count 20000 --out data/synth_plates
 ```
 
