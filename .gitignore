@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.DS_Store
+
+data/
+runs/
+*.pt
+!yolo26n.pt
+weights/
+
+tools/get_dataset.md

@@ -1,0 +1,7 @@
+# Model tarafi (Docker'a girmiyor, yerel venv'de kurulur)
+ultralytics
+torch
+torchvision
+opencv-python
+numpy
+pillow
