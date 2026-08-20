@@ -14,7 +14,10 @@ plaka klonlama şüphesini ve rota anomalilerini çıkaran sistem.
       egitimle ayni bozulma dagilimindan gelen bir val split; gercekci
       kosullarda (severity 0.0-0.3) %90-96 exact-match, agir bozulmada
       (severity 1.0) %14'e dusuyor — `train_ocr.py`, `eval_ocr.py`)
-- [ ] Takip + karakter oylaması
+- [x] Karakter oylaması (track içi çoğunluk oylaması; sentetik track
+      simülasyonunda tek kare OCR'a göre +12 ila +44 puan doğruluk kazancı
+      — `voting.py`, `eval_voting.py`)
+- [ ] Takip (ByteTrack; gerçek/hareketli video gerektiriyor, henüz yok)
 - [ ] Analitik katman (konvoy, klonlama, anomali)
 - [ ] Vue dashboard
 
