@@ -10,7 +10,10 @@ plaka klonlama şüphesini ve rota anomalilerini çıkaran sistem.
 - [x] Veritabanı şeması (geçiş kaydı, nokta, aranan araç)
 - [x] Sentetik plaka üreteci
 - [x] Plaka tespiti (YOLO26 fine-tune, mAP50 0.993 / mAP50-95 0.882 — `train_detector.py`)
-- [ ] Plaka OCR
+- [x] Plaka OCR (CRNN+CTC, sentetik veride 100% val exact-match — ancak bu,
+      egitimle ayni bozulma dagilimindan gelen bir val split; gercekci
+      kosullarda (severity 0.0-0.3) %90-96 exact-match, agir bozulmada
+      (severity 1.0) %14'e dusuyor — `train_ocr.py`, `eval_ocr.py`)
 - [ ] Takip + karakter oylaması
 - [ ] Analitik katman (konvoy, klonlama, anomali)
 - [ ] Vue dashboard
