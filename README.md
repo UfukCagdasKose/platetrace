@@ -9,7 +9,7 @@ plaka klonlama şüphesini ve rota anomalilerini çıkaran sistem.
 - [x] Docker iskeleti (API + PostgreSQL)
 - [x] Veritabanı şeması (geçiş kaydı, nokta, aranan araç)
 - [x] Sentetik plaka üreteci
-- [ ] Plaka tespiti (YOLO fine-tune)
+- [x] Plaka tespiti (YOLO26 fine-tune, mAP50 0.993 / mAP50-95 0.882 — `train_detector.py`)
 - [ ] Plaka OCR
 - [ ] Takip + karakter oylaması
 - [ ] Analitik katman (konvoy, klonlama, anomali)
