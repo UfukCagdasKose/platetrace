@@ -122,6 +122,26 @@ def greedy_decode(log_probs):
     return texts
 
 
+def greedy_decode_with_confidence(log_probs):
+    """greedy_decode ile ayni yolu izler, ayrica secilen her karakterin
+    olasiligindan bir guven skoru (0-1) uretir. Gecis kaydina yazilacak
+    guven degeri icin kullanilir."""
+    probs = log_probs.exp().cpu().numpy()   # (B, T, C)
+    preds = probs.argmax(2)                 # (B, T)
+    texts, confidences = [], []
+    for row_idx, row in enumerate(preds):
+        chars, char_probs = [], []
+        prev = 0
+        for t, idx in enumerate(row):
+            if idx != 0 and idx != prev:
+                chars.append(IDX2CHAR[idx])
+                char_probs.append(probs[row_idx, t, idx])
+            prev = idx
+        texts.append("".join(chars))
+        confidences.append(float(np.mean(char_probs)) if char_probs else 0.0)
+    return texts, confidences
+
+
 def levenshtein(a, b):
     if len(a) < len(b):
         a, b = b, a
