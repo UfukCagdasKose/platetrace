@@ -5,3 +5,8 @@ torchvision
 opencv-python
 numpy
 pillow
+
+# pipeline.py'nin gecis kayitlarini yazdigi veritabani baglantisi
+# (requirements-api.txt ile ayni surumler, app/db.py'yi degistirmeden kullanabilmek icin)
+sqlalchemy==2.0.36
+psycopg[binary]==3.2.3
