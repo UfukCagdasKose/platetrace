@@ -145,16 +145,27 @@ class Event:
 
 
 def gen_background(n, points, days, start, used_plates, event_id_start):
+    """Her arac icin 1-3 tek seferlik gecis. Ardisik gecisler tamamen
+    bagimsiz rastgele (nokta, zaman) cifti OLAMAZ -- ayni aracin iki
+    farkli noktada, birbirinden bagimsiz secilmis zamanlarda gorunmesi
+    saf sansla fiziksel olarak imkansiz bir hiz gerektirebilir (cloning.py
+    bunu gercekten yakaladi). Bu yuzden ilk gecisten sonraki her gecis,
+    onceki noktaya gore travel_seconds() ile gercekci bir sure + rastgele
+    bir bekleme suresi eklenerek planlanir."""
     events = []
     event_id = event_id_start
     for _ in range(n):
         province, letters, digits, _ = new_plate(used_plates)
         n_trips = random.randint(1, 3)
-        for _ in range(n_trips):
-            pt = random.choice(points)
-            day = random.randint(0, days - 1)
-            t = start + timedelta(days=day, hours=random.uniform(0, 24))
-            events.append(Event(province, letters, digits, pt["id"], t, "background", event_id))
+        pt = random.choice(points)
+        t = start + timedelta(days=random.randint(0, days - 1), hours=random.uniform(0, 24))
+        events.append(Event(province, letters, digits, pt["id"], t, "background", event_id))
+        for _ in range(n_trips - 1):
+            next_pt = random.choice(points)
+            secs, _ = travel_seconds(pt, next_pt, random.uniform(30, 80))
+            t += timedelta(seconds=secs + random.uniform(300, 21600))  # + bekleme (5 dk - 6 saat)
+            events.append(Event(province, letters, digits, next_pt["id"], t, "background", event_id))
+            pt = next_pt
         event_id += 1
     return events, event_id
 
@@ -208,12 +219,20 @@ def plant_convoy(points, days, start, used_plates, event_id_start):
 
     mission_days = random.sample(range(0, days), k=min(2, days))
     for day in mission_days:
-        base = start + timedelta(days=day, hours=random.uniform(9, 15))
+        t = start + timedelta(days=day, hours=random.uniform(9, 15))
         for pi, pt in enumerate(convoy_points):
-            pt_time = base + timedelta(minutes=pi * random.uniform(20, 40))
+            if pi > 0:
+                # Onceki noktaya gore gercekci (35-70 km/h) seyahat suresi -- sabit
+                # olmayan pi*uniform(20,40) bagimsiz cekilisler ardisik noktalar
+                # arasinda kisa bosluklara dusebiliyordu, bu da konvoyu yanlislikla
+                # cloning.py'nin imkansiz-hiz esigine takiliyordu. Jitter de sabit
+                # +-60sn degil secs'in orani: kisa bacaklarda sabit jitter zamani
+                # tersine cevirip ayni sorunu baska sekilde yeniden yaratiyordu.
+                secs, _ = travel_seconds(convoy_points[pi - 1], pt, random.uniform(35, 70))
+                t += timedelta(seconds=secs * random.uniform(0.85, 1.15))
             for (province, letters, digits) in provinces:
                 jitter = timedelta(minutes=random.uniform(0, 3))
-                events.append(Event(province, letters, digits, pt["id"], pt_time + jitter, "convoy", event_id))
+                events.append(Event(province, letters, digits, pt["id"], t + jitter, "convoy", event_id))
         event_id += 1
     truth = {
         "plates": plates,
@@ -430,8 +449,12 @@ def main():
             t = day_start + timedelta(hours=random.uniform(7, 9))
             for i, pt in enumerate(route):
                 if i > 0:
+                    # Jitter secs'in bir orani olarak uygulanir (sabit +-120sn degil):
+                    # iki nokta yakinsa (secs kucukse) sabit bir jitter sureyi
+                    # domine edip zamani tersine cevirebilir, bu da cloning.py'nin
+                    # imkansiz-hiz kontrolunu yanlislikla tetikler (gercekten oldu).
                     secs, _ = travel_seconds(route[i - 1], pt, random.uniform(35, 75))
-                    t += timedelta(seconds=secs + random.uniform(-120, 120))
+                    t += timedelta(seconds=secs * random.uniform(0.85, 1.15))
                 all_events.append(Event(province, letters, digits, pt["id"], t, "commuter", event_id))
             if random.random() < 0.8:
                 t = day_start + timedelta(hours=random.uniform(17, 19))
@@ -439,7 +462,7 @@ def main():
                 for i, pt in enumerate(rev):
                     if i > 0:
                         secs, _ = travel_seconds(rev[i - 1], pt, random.uniform(35, 75))
-                        t += timedelta(seconds=secs + random.uniform(-120, 120))
+                        t += timedelta(seconds=secs * random.uniform(0.85, 1.15))
                     all_events.append(Event(province, letters, digits, pt["id"], t, "commuter", event_id))
         event_id += 1
 
