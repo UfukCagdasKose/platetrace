@@ -5,6 +5,7 @@ torchvision
 opencv-python
 numpy
 pillow
+networkx
 
 # pipeline.py'nin gecis kayitlarini yazdigi veritabani baglantisi
 # (requirements-api.txt ile ayni surumler, app/db.py'yi degistirmeden kullanabilmek icin)
