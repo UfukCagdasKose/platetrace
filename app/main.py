@@ -88,9 +88,13 @@ def aranan_listele(db: Session = Depends(get_db)):
 def _gecis_rows(db, limit):
     """convoy/cloning/anomalies'in bekledigi plaka/nokta_id/zaman alanlarina
     sahip dict listesi -- ORM nesnesi degil, cunku bu modulller CSV'den
-    okunan plain dict'lerle test edildi (bkz. convoy.load_gecis_csv)."""
+    okunan plain dict'lerle test edildi (bkz. convoy.load_gecis_csv).
+
+    `if limit:` DEGIL `is not None`: limit=0 "hic satir donme" demek,
+    ama 0 Python'da falsy oldugu icin `if limit:` onu sessizce yok sayip
+    TUM satirlari donerdi."""
     query = select(GecisKaydi).order_by(GecisKaydi.zaman.desc())
-    if limit:
+    if limit is not None:
         query = query.limit(limit)
     return [{"plaka": r.plaka, "nokta_id": r.nokta_id, "zaman": r.zaman}
             for r in db.scalars(query)]
@@ -127,9 +131,17 @@ def klonlar(
     limit: int = 5000,
     db: Session = Depends(get_db),
 ):
-    """Fiziksel olarak imkansiz hiz gerektiren plaka-cifti okumalari: bkz. cloning.py."""
+    """Fiziksel olarak imkansiz hiz gerektiren plaka-cifti okumalari: bkz. cloning.py.
+
+    GecisKaydi.nokta_id uzerinde bir foreign key kisiti yok (bkz.
+    app/models.py); yani /gecisler'e uydurma bir nokta_id'yle kayit
+    eklemek mumkun. cloning.detect_clones her okumanin noktasini
+    points[nokta_id] ile arar -- nokta tabloda yoksa KeyError'la 500'e
+    duser. Boyle bir satiri sessizce atlamak (analiz disi birakmak),
+    tum istegi patlatmaktan daha dogru bir davranis."""
     rows = _gecis_rows(db, limit)
     points = {n.id: (n.enlem, n.boylam) for n in db.scalars(select(Nokta))}
+    rows = [r for r in rows if r["nokta_id"] in points]
     return detect_clones(rows, points, max_speed)
 
 
