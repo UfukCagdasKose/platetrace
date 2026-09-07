@@ -29,6 +29,10 @@ services:
     volumes:
       - ./app:/srv/app
       - ./data:/srv/data
+      - ./watchlist.py:/srv/watchlist.py
+      - ./convoy.py:/srv/convoy.py
+      - ./cloning.py:/srv/cloning.py
+      - ./anomalies.py:/srv/anomalies.py
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 volumes:
