@@ -43,7 +43,8 @@ plaka klonlama şüphesini ve rota anomalilerini çıkaran sistem.
 - [x] Analitik uçları FastAPI'de (`/konvoylar`, `/klonlar`, `/anomaliler`,
       `/aranan/eslesmeler`) — eval script'leriyle aynı fonksiyonlar,
       veritabanından canlı okuyor (`app/main.py`)
-- [ ] Vue dashboard (`dashboard/`) — başlangıç aşamasında, tek sayfa
+- [x] Vue dashboard (`dashboard/`) — dört analitik ucun tamamı için görünüm,
+      docker-compose'a bağlı
 
 ## Kurulum
 
@@ -107,14 +108,17 @@ python3 eval_anomalies.py --scenario data/scenario
 Her `eval_*.py`, kendi modülünü senaryonun `ground_truth.json` dosyasındaki
 planted olaylara karşı ölçüp precision/recall rakamı basar.
 
-### Dashboard (başlangıç aşaması)
+### Dashboard
 
 ![Dashboard ekran görüntüsü](dashboard/screenshot.jpg)
 
-`dashboard/`, `/konvoylar` ucundan canlı veri çeken minimal bir Vue 3 +
-Vite sayfası — henüz sadece konvoy görünümü var, `/klonlar` /
-`/anomaliler` / `/aranan/eslesmeler` için görünüm yok. Router, state
-kütüphanesi, chart kütüphanesi yok; grafikler el yazımı CSS/SVG.
+`dashboard/`, dört analitik ucun (`/konvoylar`, `/klonlar`, `/anomaliler`,
+`/aranan/eslesmeler`) her biri için canlı veri çeken bir sekme olan bir
+Vue 3 + Vite paneli. Router, state kütüphanesi, UI/chart kütüphanesi yok;
+sekme geçişi düz bir `ref`, grafikler el yazımı CSS/SVG.
+
+En basit yol -- `docker compose up --build` zaten `dashboard`'ı da
+başlatıyor: http://localhost:5173. Ayrı ayrı çalıştırmak için:
 
 ```bash
 # API (ayrı bir terminalde)
@@ -143,7 +147,7 @@ platetrace/
 │   ├── main.py              # FastAPI uçları (geçiş kaydı + analitik)
 │   ├── db.py                # Veritabanı bağlantısı
 │   └── models.py            # Şema: GecisKaydi, Nokta, ArananArac
-├── dashboard/                # Vue 3 + Vite arayüzü (başlangıç aşaması)
+├── dashboard/                # Vue 3 + Vite arayüzü (4 analitik görünüm)
 ├── tools/
 │   └── synth_plates.py      # Sentetik plaka üreteci
 ├── train_detector.py        # YOLO fine-tune (plaka tespiti)
