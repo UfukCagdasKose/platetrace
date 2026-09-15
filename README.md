@@ -40,7 +40,10 @@ plaka klonlama şüphesini ve rota anomalilerini çıkaran sistem.
 - [x] Rota/zaman anomali tespiti (aracın kendi geçmişine göre alışılmadık
       nokta/saat; 8 tohumda 15/16 planted anomaliyi 0 yanlış pozitifle
       yakalıyor — `anomalies.py`, `eval_anomalies.py`)
-- [ ] Vue dashboard
+- [x] Analitik uçları FastAPI'de (`/konvoylar`, `/klonlar`, `/anomaliler`,
+      `/aranan/eslesmeler`) — eval script'leriyle aynı fonksiyonlar,
+      veritabanından canlı okuyor (`app/main.py`)
+- [ ] Vue dashboard (`dashboard/`) — başlangıç aşamasında, tek sayfa
 
 ## Kurulum
 
@@ -104,6 +107,30 @@ python3 eval_anomalies.py --scenario data/scenario
 Her `eval_*.py`, kendi modülünü senaryonun `ground_truth.json` dosyasındaki
 planted olaylara karşı ölçüp precision/recall rakamı basar.
 
+### Dashboard (başlangıç aşaması)
+
+![Dashboard ekran görüntüsü](dashboard/screenshot.jpg)
+
+`dashboard/`, `/konvoylar` ucundan canlı veri çeken minimal bir Vue 3 +
+Vite sayfası — henüz sadece konvoy görünümü var, `/klonlar` /
+`/anomaliler` / `/aranan/eslesmeler` için görünüm yok. Router, state
+kütüphanesi, chart kütüphanesi yok; grafikler el yazımı CSS/SVG.
+
+```bash
+# API (ayrı bir terminalde)
+python3 -m venv .venv-api && source .venv-api/bin/activate
+pip install -r requirements-api.txt
+uvicorn app.main:app --reload
+
+# Dashboard
+cd dashboard
+npm install
+npm run dev          # http://localhost:5173
+```
+
+Sayfa tek bir senaryoyla oldukça boş görünür; zengin bir demo veri seti
+için `dashboard/README.md`'deki çoklu-tohum yükleme tarifine bakılabilir.
+
 ## Proje yapısı
 
 ```
@@ -113,9 +140,10 @@ platetrace/
 ├── requirements-api.txt     # Docker içine giren bağımlılıklar
 ├── requirements-ml.txt      # Yerel model ortamı
 ├── app/
-│   ├── main.py              # FastAPI uçları
+│   ├── main.py              # FastAPI uçları (geçiş kaydı + analitik)
 │   ├── db.py                # Veritabanı bağlantısı
 │   └── models.py            # Şema: GecisKaydi, Nokta, ArananArac
+├── dashboard/                # Vue 3 + Vite arayüzü (başlangıç aşaması)
 ├── tools/
 │   └── synth_plates.py      # Sentetik plaka üreteci
 ├── train_detector.py        # YOLO fine-tune (plaka tespiti)
