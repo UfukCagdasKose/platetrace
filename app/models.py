@@ -12,7 +12,12 @@ class Nokta(Base):
     __tablename__ = "nokta"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    ad: Mapped[str] = mapped_column(String(64), unique=True)
+    # ad UNIQUE degil: bu bir dogal anahtar degil, sadece bir goruntu adi.
+    # synth_scenario.py'yi --load-db ile ayni veritabanina birden fazla kez
+    # (birden fazla senaryo/tohum) calistirmak, iki farkli noktanin ayni
+    # ismi tasimasina yol acabiliyor (ör. iki ayri "Otoyol Gise (1)") --
+    # bu gercek bir is kurali ihlali degil.
+    ad: Mapped[str] = mapped_column(String(64))
     enlem: Mapped[float] = mapped_column(Float)
     boylam: Mapped[float] = mapped_column(Float)
 
