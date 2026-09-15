@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -32,6 +33,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="AGIS", version="0.1.0", lifespan=lifespan)
+
+# dashboard/, Vite dev sunucusunda (localhost:5173) calisiyor, API ise :8000'de
+# -- farkli origin, tarayici CORS'suz fetch'i engeller. Sadece yerel gelistirme
+# portlarina izin veriliyor; bu iskelet henuz deploy edilmiyor.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 
 class GecisIn(BaseModel):
