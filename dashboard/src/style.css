@@ -35,6 +35,38 @@ body {
   letter-spacing: 0.01em;
 }
 
+/* --- sekme gezinmesi: router yok, sadece aktif bilesen degisiyor. --- */
+.sekme-cubugu {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sekme-dugmesi {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--metin-soluk);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.sekme-dugmesi:hover {
+  color: var(--metin);
+}
+
+.sekme-dugmesi.aktif {
+  color: var(--metin);
+  border-bottom-color: var(--cyan);
+}
+
 .durum-metni {
   color: var(--metin-soluk);
 }
@@ -112,7 +144,7 @@ body {
 
 .bar-satir {
   display: grid;
-  grid-template-columns: 2.2rem 1fr 3.6rem;
+  grid-template-columns: 4.5rem 1fr 3.6rem;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
@@ -123,6 +155,9 @@ body {
   font-size: 0.78rem;
   color: var(--metin-soluk);
   font-family: "SF Mono", Consolas, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bar-track {
@@ -145,12 +180,73 @@ body {
   filter: brightness(1.25);
 }
 
+.bar-dolgu--pink {
+  background: linear-gradient(90deg, var(--pink), #e88cae);
+}
+
 .bar-deger {
   font-size: 0.78rem;
   color: var(--metin-soluk);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+/* Esik cizgili bar: klonlama hizinin 150 km/h esigine gore nerede
+   durdugunu gosteriyor -- baseline'a gore konum, dataviz skill'in
+   "above a baseline" isi. */
+.bar-track--esikli {
+  position: relative;
+}
+
+.bar-esik-cizgi {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--kritik);
+  z-index: 1;
+}
+
+/* --- iki kategorili yigin bar (odd_point/odd_hour, tam/bulanik eslesme):
+   kimlik ayrimi -> kategorik renk (cyan/pink), buyukluk degil. --- */
+.yigin-bar {
+  display: flex;
+  height: 18px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 0.75rem;
+}
+
+.yigin-dilim {
+  height: 100%;
+  min-width: 2px;
+}
+.yigin-dilim--cyan { background: var(--cyan); }
+.yigin-dilim--pink { background: var(--pink); }
+
+.yigin-lejant {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--metin-soluk);
+}
+
+.lejant-ogesi {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lejant-nokta {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.lejant-nokta--cyan { background: var(--cyan); }
+.lejant-nokta--pink { background: var(--pink); }
 
 /* --- konvoy karlari --- */
 .konvoy-listesi {
@@ -274,4 +370,10 @@ body {
 .kenar-detay {
   color: var(--metin-soluk);
   font-size: 0.78rem;
+}
+
+.kenar-vurgu {
+  color: var(--metin);
+  font-weight: 600;
+  font-size: 0.85rem;
 }
