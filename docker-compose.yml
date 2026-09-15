@@ -35,5 +35,22 @@ services:
       - ./anomalies.py:/srv/anomalies.py
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  dashboard:
+    build: ./dashboard
+    container_name: agis_dashboard
+    depends_on:
+      - api
+    environment:
+      # Tarayicida calisan kod fetch() yapiyor, container icinden degil --
+      # bu yuzden Docker network adi (api:8000) degil, host'tan gorunen
+      # yayinlanmis port (localhost:8000) dogru.
+      VITE_API_BASE: http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./dashboard/src:/srv/src
+      - ./dashboard/index.html:/srv/index.html
+    command: npm run dev -- --host 0.0.0.0
+
 volumes:
   pgdata:
