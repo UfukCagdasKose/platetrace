@@ -19,8 +19,11 @@ plaka klonlama şüphesini ve rota anomalilerini çıkaran sistem.
       — `voting.py`, `eval_voting.py`)
 - [x] Tespit+OCR pipeline'ı (`pipeline.py`) — geçiş kaydı üretip veritabanına
       yazıyor; henüz takip yok, her tespit tek kare olarak okunuyor (oylama
-      uygulanmıyor)
-- [ ] Takip (ByteTrack; gerçek/hareketli video gerektiriyor, henüz yok)
+      uygulanmıyor). Gerçek fotoğraflarla (`data/plates/images/val`) uçtan
+      uca test edildi: tespit 20/20, ama format-geçerli OCR okuması sadece
+      5/20 (%25) — tespit modeli gerçek, OCR modeli sentetik veriyle
+      eğitildiği için beklenen alan farkı, artık ölçülmüş durumda (küçük
+      örneklem, n=20)
 - [x] Sentetik senaryo üreteci (planted olaylarla: konvoy, rutin birlikte
       seyahat — yanlış pozitif tuzağı, klonlanmış plaka, rota/zaman
       anomalisi; her okuma gerçek OCR checkpoint'inden geçiriliyor —
@@ -54,7 +57,8 @@ plaka klonlama şüphesini ve rota anomalilerini çıkaran sistem.
 docker compose up --build
 ```
 
-Kontrol: http://localhost:8000/health ve http://localhost:8000/docs
+Kontrol: http://localhost:8000/health, http://localhost:8000/docs ve
+http://localhost:5173 (dashboard)
 
 ### 2. Model tarafı için yerel ortam
 
@@ -139,14 +143,17 @@ için `dashboard/README.md`'deki çoklu-tohum yükleme tarifine bakılabilir.
 
 ```
 platetrace/
-├── docker-compose.yml       # API + PostgreSQL
-├── Dockerfile
+├── docker-compose.yml       # PostgreSQL + API + Dashboard
+├── Dockerfile                # API imajı (dashboard/Dockerfile kendi imajı)
 ├── requirements-api.txt     # Docker içine giren bağımlılıklar
 ├── requirements-ml.txt      # Yerel model ortamı
+├── requirements-test.txt    # pytest + httpx (API testleri)
 ├── app/
 │   ├── main.py              # FastAPI uçları (geçiş kaydı + analitik)
 │   ├── db.py                # Veritabanı bağlantısı
 │   └── models.py            # Şema: GecisKaydi, Nokta, ArananArac
+├── tests/
+│   └── test_api.py          # API testleri (pytest, in-memory SQLite)
 ├── dashboard/                # Vue 3 + Vite arayüzü (4 analitik görünüm)
 ├── tools/
 │   └── synth_plates.py      # Sentetik plaka üreteci
