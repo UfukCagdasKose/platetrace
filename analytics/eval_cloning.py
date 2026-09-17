@@ -10,8 +10,8 @@ Kullanim:
 import argparse
 import json
 
-from cloning import MAX_PLAUSIBLE_SPEED_KMH, detect_clones, load_points
-from convoy import load_gecis_csv
+from analytics.cloning import MAX_PLAUSIBLE_SPEED_KMH, detect_clones, load_points
+from analytics.convoy import load_gecis_csv
 
 
 def main():

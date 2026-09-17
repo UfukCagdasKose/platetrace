@@ -34,8 +34,8 @@ from collections import defaultdict
 from itertools import combinations
 from math import asin, cos, radians, sin, sqrt
 
-from convoy import load_gecis_csv
-from watchlist import weighted_edit_distance
+from analytics.convoy import load_gecis_csv
+from analytics.watchlist import weighted_edit_distance
 
 MAX_PLAUSIBLE_SPEED_KMH = 150.0  # synth_scenario.py'deki varsayimla ayni
 

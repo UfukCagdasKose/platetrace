@@ -18,7 +18,7 @@ Kullanim:
 import argparse
 import csv
 
-from watchlist import find_matches
+from analytics.watchlist import find_matches
 
 
 def load_csv(path):

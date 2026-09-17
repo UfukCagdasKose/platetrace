@@ -16,12 +16,12 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from anomalies import MIN_DISTINCT_DAYS, ODD_HOUR_THRESHOLD_HOURS, detect_anomalies
+from analytics.anomalies import MIN_DISTINCT_DAYS, ODD_HOUR_THRESHOLD_HOURS, detect_anomalies
+from analytics.cloning import MAX_PLAUSIBLE_SPEED_KMH, detect_clones
+from analytics.convoy import detect_convoys
+from analytics.watchlist import find_matches
 from app.db import Base, engine, get_db
 from app.models import ArananArac, GecisKaydi, Nokta
-from cloning import MAX_PLAUSIBLE_SPEED_KMH, detect_clones
-from convoy import detect_convoys
-from watchlist import find_matches
 
 # convoy.py'nin CLI'siyla ayni: eval_convoy.py'de olculup kalibre edildi.
 CONVOY_MIN_WEIGHT = 0.025

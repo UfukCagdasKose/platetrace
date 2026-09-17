@@ -42,7 +42,7 @@ from ultralytics import YOLO
 
 sys.path.insert(0, "tools")
 from synth_plates import LETTER_DIGIT_RULES, PLATE_LETTERS
-from train_ocr import CHARS, CRNN, greedy_decode_with_confidence
+from vision.train_ocr import CHARS, CRNN, greedy_decode_with_confidence
 
 IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".bmp")
 

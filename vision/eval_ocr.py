@@ -24,7 +24,7 @@ import torch
 sys.path.insert(0, "tools")
 from synth_plates import (apply_motion_blur, apply_perspective, apply_shadow,
                           random_plate_text, render_clean_plate)
-from train_ocr import CHARS, CRNN, greedy_decode, levenshtein
+from vision.train_ocr import CHARS, CRNN, greedy_decode, levenshtein
 
 
 def harsh_degrade(img, severity):

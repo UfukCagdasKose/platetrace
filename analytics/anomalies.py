@@ -43,8 +43,8 @@ riskini artirir, bu yuzden duzeltilmedi.
 import argparse
 from collections import defaultdict
 
-from cloning import cluster_plate_identities
-from convoy import load_gecis_csv
+from analytics.cloning import cluster_plate_identities
+from analytics.convoy import load_gecis_csv
 
 ODD_HOUR_THRESHOLD_HOURS = 3.0
 # eval_anomalies.py'de synth_scenario.py'nin varsayilanlarina karsi olculdu (8 tohum,

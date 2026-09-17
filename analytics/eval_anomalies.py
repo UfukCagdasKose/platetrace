@@ -17,8 +17,8 @@ Kullanim:
 import argparse
 import json
 
-from anomalies import MIN_DISTINCT_DAYS, ODD_HOUR_THRESHOLD_HOURS, detect_anomalies
-from convoy import load_gecis_csv
+from analytics.anomalies import MIN_DISTINCT_DAYS, ODD_HOUR_THRESHOLD_HOURS, detect_anomalies
+from analytics.convoy import load_gecis_csv
 
 
 def find_truth_rows(rows, truth):

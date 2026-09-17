@@ -19,9 +19,9 @@ import torch
 
 sys.path.insert(0, "tools")
 from synth_plates import random_plate_text, render_clean_plate
-from eval_ocr import harsh_degrade, load_model
-from train_ocr import greedy_decode
-from voting import vote_plate
+from vision.eval_ocr import harsh_degrade, load_model
+from vision.train_ocr import greedy_decode
+from vision.voting import vote_plate
 
 
 @torch.no_grad()

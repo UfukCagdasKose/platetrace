@@ -18,7 +18,7 @@ import json
 
 import networkx as nx
 
-from convoy import build_graph, load_gecis_csv
+from analytics.convoy import build_graph, load_gecis_csv
 
 
 def analyze(g, convoy_plates, routine_plates):
