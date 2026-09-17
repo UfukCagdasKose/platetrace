@@ -21,7 +21,13 @@ Bilinen sinirlar:
   - Goruntu klasoru modunda gercek zaman damgasi yok, isleme ani yazilir.
   - Tespit modeli gercek fotograflarla, OCR modeli sentetik veriyle
     egitildi; aralarinda alan (domain) farki var, dogruluk bu yuzden
-    eval_ocr.py'daki sentetik egriden dusuk cikabilir.
+    eval_ocr.py'daki sentetik egriden dusuk cikabilir. Tahmin degil:
+    data/plates/images/val'daki 20 gercek fotografla calistirildiginda
+    tespit 20/20 calisti (bu kisim gercek verilerle egitildi) ama format-
+    gecerli OCR okumasi sadece 5/20 (%25) -- eval_ocr.py'nin gercekci
+    severity'deki %90-96'sindan cok daha dusuk, tam olarak bu alan
+    farkinin beklenen sonucu. Kucuk bir ornek (n=20), genel bir oran
+    iddiasi degil, ama riskin gercek oldugunu dogruluyor.
 """
 
 import argparse
