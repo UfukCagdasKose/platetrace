@@ -1,66 +1,70 @@
-# AGIS: Araç Geçiş İstihbarat Sistemi
+# AGIS: Vehicle Transit Intelligence System
 
-Kamera görüntüsünden araç ve plaka tespiti yaparak yapılandırılmış geçiş
-kayıtları üreten; bu kayıtları bir ilişki grafiği üzerinde analiz ederek
-konvoy, plaka klonlama ve rota/zaman anomalisi gibi örüntüleri ortaya
-çıkaran, sonuçları bir web panelinde sunan uçtan uca bir sistem.
+An end-to-end system that detects and reads license plates from camera
+footage into structured transit records, analyzes those records over a
+relationship graph to surface patterns like convoys, plate cloning, and
+route/time anomalies, and presents the results in a web dashboard.
 
-## Mimari
+## Architecture
 
 ```mermaid
 flowchart LR
-    SRC["Video / görüntü<br/>kaynağı"] --> DET["YOLO26<br/>plaka tespiti"]
+    SRC["Video / image<br/>source"] --> DET["YOLO26<br/>plate detection"]
     DET --> OCR["CRNN + CTC<br/>OCR"]
-    OCR --> FMT["Türk plaka format<br/>doğrulama"]
+    OCR --> FMT["Turkish plate format<br/>validation"]
     FMT --> DB[("PostgreSQL<br/>GecisKaydi")]
 
-    DB --> CONV["convoy.py<br/>konvoy tespiti"]
-    DB --> CLONE["cloning.py<br/>klonlama tespiti"]
-    DB --> ANOM["anomalies.py<br/>rota/zaman anomalisi"]
-    DB --> WATCH["watchlist.py<br/>fuzzy eşleştirme"]
+    DB --> CONV["convoy.py<br/>convoy detection"]
+    DB --> CLONE["cloning.py<br/>cloning detection"]
+    DB --> ANOM["anomalies.py<br/>route/time anomalies"]
+    DB --> WATCH["watchlist.py<br/>fuzzy matching"]
 
-    CONV --> API["FastAPI<br/>analitik uçları"]
+    CONV --> API["FastAPI<br/>analytics endpoints"]
     CLONE --> API
     ANOM --> API
     WATCH --> API
     API --> DASH["Vue 3<br/>dashboard"]
 
-    classDef algilama fill:#eef2ff,stroke:#3987e5,color:#1e1b4b;
-    classDef analitik fill:#fdf2f8,stroke:#d55181,color:#500724;
-    classDef arayuz fill:#f0fdf4,stroke:#16a34a,color:#052e16;
+    classDef vision fill:#eef2ff,stroke:#3987e5,color:#1e1b4b;
+    classDef analytics fill:#fdf2f8,stroke:#d55181,color:#500724;
+    classDef interface fill:#f0fdf4,stroke:#16a34a,color:#052e16;
 
-    class SRC,DET,OCR,FMT algilama;
-    class DB,CONV,CLONE,ANOM,WATCH analitik;
-    class API,DASH arayuz;
+    class SRC,DET,OCR,FMT vision;
+    class DB,CONV,CLONE,ANOM,WATCH analytics;
+    class API,DASH interface;
 ```
 
-## Özellikler
+## Features
 
-- Plaka tespiti — YOLO26 fine-tune
-- Plaka OCR — CRNN + CTC
-- Track-seviyesi karakter oylaması
-- Uçtan uca tespit + OCR pipeline'ı (`pipeline.py`)
-- Planted olaylı sentetik senaryo üreteci (`synth_scenario.py`)
-- Bulanık (fuzzy) aranan araç eşleştirme
-- Konvoy tespiti — trafik hacmine göre normalize edilmiş ilişki grafiği
-- Plaka klonlama tespiti — fiziksel olarak imkânsız seyahat hızı
-- Rota/zaman anomali tespiti
-- FastAPI analitik servisi ve Vue 3 dashboard
+- Plate detection: YOLO26 fine-tune
+- Plate OCR: CRNN + CTC
+- Track-level character voting
+- End-to-end detection + OCR pipeline (`vision/pipeline.py`)
+- Synthetic scenario generator with planted events (`synth_scenario.py`)
+- Fuzzy watchlist matching
+- Convoy detection: relationship graph normalized by traffic volume
+- Plate cloning detection: physically impossible travel speed
+- Route/time anomaly detection
+- FastAPI analytics service and Vue 3 dashboard
 
 ## Dashboard
 
-![Dashboard ekran görüntüsü](dashboard/screenshot.jpg)
+> **Note:** The project itself (dashboard UI, domain terms, code, and the
+> other docs in this repo) is in Turkish, matching the deployment context.
+> This README is translated to English for accessibility.
 
-`dashboard/`, dört analitik ucun (`/konvoylar`, `/klonlar`, `/anomaliler`,
-`/aranan/eslesmeler`) her biri için canlı veri çeken bir sekme olan bir
-Vue 3 + Vite paneli. Router, state kütüphanesi, UI/chart kütüphanesi yok;
-sekme geçişi düz bir `ref`, grafikler el yazımı CSS/SVG.
+![Dashboard screenshot](dashboard/screenshot.jpg)
 
-En basit yol — `docker compose up --build` zaten `dashboard`'ı da
-başlatıyor: http://localhost:5173. Ayrı ayrı çalıştırmak için:
+`dashboard/` is a Vue 3 + Vite panel with one tab per analytics endpoint
+(`/konvoylar`, `/klonlar`, `/anomaliler`, `/aranan/eslesmeler`), each
+fetching live data. No router, state library, or UI/chart library.
+Tab switching is a plain `ref`, and charts are hand-written CSS/SVG.
+
+The easiest way to run it: `docker compose up --build` already starts
+`dashboard` too, at http://localhost:5173. To run it separately:
 
 ```bash
-# API (ayrı bir terminalde)
+# API (in a separate terminal)
 python3 -m venv .venv-api && source .venv-api/bin/activate
 pip install -r requirements-api.txt
 uvicorn app.main:app --reload
@@ -71,123 +75,129 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Sayfa tek bir senaryoyla oldukça boş görünür; zengin bir demo veri seti
-için `dashboard/README.md`'deki çoklu-tohum yükleme tarifine bakılabilir.
+The page looks fairly empty with a single scenario; for a richer demo
+dataset see the multi-seed loading recipe in `dashboard/README.md`.
 
-## Sonuçlar
+## Results
 
-| Bileşen | Metrik | Sonuç |
+| Component | Metric | Result |
 |---|---|---|
-| Plaka tespiti | mAP50 / mAP50-95 | 0.993 / 0.882 |
-| Plaka OCR (gerçekçi bozulma) | Exact-match | %90–96 |
-| Plaka OCR (gerçek fotoğraf, n=20) | Exact-match | %25 |
-| Karakter oylaması | Tek kareye göre kazanç | +12 ila +44 puan |
-| Aranan araç eşleştirme (fuzzy) | Recall kazancı | %50→%90 (severity 0.6) |
-| Konvoy tespiti | Yanlış pozitif | 0 / 7 tohum |
-| Plaka klonlama tespiti | Yanlış pozitif | 0 / 7 tohum |
-| Rota/zaman anomali tespiti | Yakalama / yanlış pozitif | 15/16, 0 (8 tohum) |
+| Plate detection | mAP50 / mAP50-95 | 0.993 / 0.882 |
+| Plate OCR (realistic degradation) | Exact-match | 90–96% |
+| Plate OCR (real photo, n=20) | Exact-match | 25% |
+| Character voting | Gain over single-frame | +12 to +44 points |
+| Watchlist matching (fuzzy) | Recall gain | 50%→90% (severity 0.6) |
+| Convoy detection | False positives | 0 / 7 seeds |
+| Plate cloning detection | False positives | 0 / 7 seeds |
+| Route/time anomaly detection | Catch rate / false positives | 15/16, 0 (8 seeds) |
 
-Her rakamın nasıl ölçüldüğü (script, metodoloji, örneklem büyüklüğü) için
-[`PROJE_RAPORU.md`](PROJE_RAPORU.md).
+## Setup
 
-## Kurulum
-
-### 1. Servisleri ayağa kaldır
+### 1. Bring up the services
 
 ```bash
 docker compose up --build
 ```
 
-Kontrol: http://localhost:8000/health, http://localhost:8000/docs ve
+Check: http://localhost:8000/health, http://localhost:8000/docs, and
 http://localhost:5173 (dashboard)
 
-### 2. Model tarafı için yerel ortam
+### 2. Local environment for the model side
 
-Docker imajı sadece API'yi taşıyor; model eğitimi yerelde yapılır.
+The Docker image only carries the API; model training happens locally.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
 ```
 
-## Kullanım
+## Usage
 
-### Sentetik plaka verisi üret
+### Generate synthetic plate data
 
 ```bash
-# Önce görsel kontrol: 50 tane bozulmamış plaka
+# Visual sanity check first: 50 clean, undegraded plates
 python3 tools/synth_plates.py --count 50 --out data/preview --clean --width 520 --height 110
 
-# Eğitim seti
+# Training set
 python3 tools/synth_plates.py --count 20000 --out data/synth_plates
 ```
 
-`data/synth_plates/labels.txt` içinde `dosya_yolu<TAB>plaka_metni` formatında
-etiketler bulunur.
+`data/synth_plates/labels.txt` contains labels in
+`file_path<TAB>plate_text` format.
 
-### Plaka tespit modelini eğit
+### Train the plate detection model
 
-Roboflow Universe üzerinden YOLOv8 formatında bir plaka veri seti indir
-(ör. `plakatanima-vnt3k/turkish-number-plates`), `data/plates/` altına
-çıkar, sonra:
+Download a plate dataset in YOLOv8 format from Roboflow Universe (e.g.
+`plakatanima-vnt3k/turkish-number-plates`), extract it under
+`data/plates/`, then:
 
 ```bash
-python3 train_detector.py --data data/plates/data.yaml --epochs 30
+python3 -m vision.train_detector --data data/plates/data.yaml --epochs 30
 ```
 
-### Analitik senaryosu üret ve değerlendir
+### Generate and evaluate an analytics scenario
 
-Planted olaylı (konvoy, rutin birlikte seyahat, klonlanmış plaka, rota/zaman
-anomalisi) sentetik bir senaryo, gerçek OCR checkpoint'inden geçirilmiş
-okumalarla:
+A synthetic scenario with planted events (convoy, routine co-travel,
+cloned plate, route/time anomaly), with every reading passed through the
+actual OCR checkpoint:
 
 ```bash
 python3 synth_scenario.py --out data/scenario
 
-python3 eval_watchlist.py --scenario data/scenario
-python3 eval_convoy.py --scenario data/scenario
-python3 eval_cloning.py --scenario data/scenario
-python3 eval_anomalies.py --scenario data/scenario
+python3 -m analytics.eval_watchlist --scenario data/scenario
+python3 -m analytics.eval_convoy --scenario data/scenario
+python3 -m analytics.eval_cloning --scenario data/scenario
+python3 -m analytics.eval_anomalies --scenario data/scenario
 ```
 
-Her `eval_*.py`, kendi modülünü senaryonun `ground_truth.json` dosyasındaki
-planted olaylara karşı ölçüp precision/recall rakamı basar.
+Each `eval_*.py` measures its own module against the planted events in
+the scenario's `ground_truth.json` and prints a precision/recall number.
 
-## Proje yapısı
+## Project structure
 
 ```
 platetrace/
 ├── docker-compose.yml       # PostgreSQL + API + Dashboard
-├── Dockerfile                # API imajı (dashboard/Dockerfile kendi imajı)
-├── requirements-api.txt     # Docker içine giren bağımlılıklar
-├── requirements-ml.txt      # Yerel model ortamı
-├── requirements-test.txt    # pytest + httpx (API testleri)
-├── app/
-│   ├── main.py              # FastAPI uçları (geçiş kaydı + analitik)
-│   ├── db.py                # Veritabanı bağlantısı
-│   └── models.py            # Şema: GecisKaydi, Nokta, ArananArac
+├── Dockerfile                # API image (dashboard/Dockerfile is its own image)
+├── requirements-api.txt     # Dependencies that go into Docker (API + analytics/)
+├── requirements-ml.txt      # Local model environment (vision/ + scenario generator)
+├── requirements-test.txt    # pytest + httpx (API tests)
+├── app/                      # FastAPI service
+│   ├── main.py              # Endpoints (transit records + 4 analytics endpoints calling analytics/)
+│   ├── db.py                # Database connection
+│   └── models.py            # Schema: GecisKaydi, Nokta, ArananArac
+├── vision/                   # Detection layer, needs torch/ultralytics, never ships in the API image
+│   ├── train_detector.py    # YOLO fine-tune (plate detection)
+│   ├── train_ocr.py         # CRNN+CTC training (plate OCR)
+│   ├── eval_ocr.py          # OCR degradation curve
+│   ├── voting.py            # Track-level character voting
+│   ├── eval_voting.py       # Voting vs. single-frame OCR comparison
+│   └── pipeline.py          # Detection+OCR -> GecisKaydi
+├── analytics/                 # Analytics layer, the only repo code that ships in the API image
+│   ├── watchlist.py          # Fuzzy watchlist matching
+│   ├── convoy.py             # Convoy detection
+│   ├── cloning.py            # Plate cloning detection
+│   ├── anomalies.py          # Route/time anomaly detection
+│   └── eval_watchlist.py, eval_convoy.py, eval_cloning.py, eval_anomalies.py
+│                              # Measures each module against ground truth
 ├── tests/
-│   └── test_api.py          # API testleri (pytest, in-memory SQLite)
-├── dashboard/                # Vue 3 + Vite arayüzü (4 analitik görünüm)
+│   └── test_api.py          # API tests (pytest, in-memory SQLite)
+├── dashboard/                # Vue 3 + Vite frontend (4 analytics views)
 ├── tools/
-│   └── synth_plates.py      # Sentetik plaka üreteci
-├── train_detector.py        # YOLO fine-tune (plaka tespiti)
-├── train_ocr.py             # CRNN+CTC eğitimi (plaka OCR)
-├── eval_ocr.py              # OCR degradasyon eğrisi
-├── voting.py                # Track içi karakter oylaması
-├── eval_voting.py           # Oylama vs. tek kare OCR karşılaştırması
-├── pipeline.py              # Tespit+OCR -> GecisKaydi
-├── synth_scenario.py        # Planted olaylı analitik senaryo üreteci
-├── watchlist.py              # Bulanık aranan araç eşleştirme
-├── convoy.py                 # Konvoy tespiti
-├── cloning.py                # Plaka klonlama tespiti
-├── anomalies.py              # Rota/zaman anomali tespiti
-└── eval_watchlist.py, eval_convoy.py, eval_cloning.py, eval_anomalies.py
-                              # Her analitik modül için ground-truth'a karşı ölçüm
+│   └── synth_plates.py      # Synthetic plate generator
+└── synth_scenario.py         # Planted-event scenario generator (bridges vision/ and analytics/)
 ```
 
-## Veri ve gizlilik
+Scripts under `vision/` and `analytics/` run as packages
+(`python3 -m vision.pipeline`, `python3 -m analytics.eval_convoy`, etc.),
+since modules import each other with absolute paths like
+`analytics.convoy`, so they can't be run as a bare file path
+(`python3 analytics/eval_convoy.py`).
 
-Gerçek plaka ve kamera verisi kullanılmaz. Plaka, KVKK kapsamında kişisel
-veri niteliğindedir. Tespit modeli açık veri setleriyle, OCR modeli bu
-projede üretilen sentetik veriyle eğitilir.
+## Data and privacy
+
+No real plate or camera data is used. Plates are personal data under
+KVKK (Turkey's GDPR equivalent). The detection model is trained on public
+datasets; the OCR model is trained on synthetic data generated in this
+repo.
