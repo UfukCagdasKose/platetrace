@@ -1,53 +1,94 @@
-# AGIS — Araç Geçiş İstihbarat Sistemi
+# AGIS: Araç Geçiş İstihbarat Sistemi
 
 Kamera görüntüsünden araç ve plaka tespiti yaparak yapılandırılmış geçiş
-kayıtları üreten; bu kayıtlar üzerinde birlikte hareket eden araç ağlarını,
-plaka klonlama şüphesini ve rota anomalilerini çıkaran sistem.
+kayıtları üreten; bu kayıtları bir ilişki grafiği üzerinde analiz ederek
+konvoy, plaka klonlama ve rota/zaman anomalisi gibi örüntüleri ortaya
+çıkaran, sonuçları bir web panelinde sunan uçtan uca bir sistem.
 
-## Durum
+## Mimari
 
-- [x] Docker iskeleti (API + PostgreSQL)
-- [x] Veritabanı şeması (geçiş kaydı, nokta, aranan araç)
-- [x] Sentetik plaka üreteci
-- [x] Plaka tespiti (YOLO26 fine-tune, mAP50 0.993 / mAP50-95 0.882 — `train_detector.py`)
-- [x] Plaka OCR (CRNN+CTC, sentetik veride 100% val exact-match — ancak bu,
-      egitimle ayni bozulma dagilimindan gelen bir val split; gercekci
-      kosullarda (severity 0.0-0.3) %90-96 exact-match, agir bozulmada
-      (severity 1.0) %14'e dusuyor — `train_ocr.py`, `eval_ocr.py`)
-- [x] Karakter oylaması (track içi çoğunluk oylaması; sentetik track
-      simülasyonunda tek kare OCR'a göre +12 ila +44 puan doğruluk kazancı
-      — `voting.py`, `eval_voting.py`)
-- [x] Tespit+OCR pipeline'ı (`pipeline.py`) — geçiş kaydı üretip veritabanına
-      yazıyor; henüz takip yok, her tespit tek kare olarak okunuyor (oylama
-      uygulanmıyor). Gerçek fotoğraflarla (`data/plates/images/val`) uçtan
-      uca test edildi: tespit 20/20, ama format-geçerli OCR okuması sadece
-      5/20 (%25) — tespit modeli gerçek, OCR modeli sentetik veriyle
-      eğitildiği için beklenen alan farkı, artık ölçülmüş durumda (küçük
-      örneklem, n=20)
-- [x] Sentetik senaryo üreteci (planted olaylarla: konvoy, rutin birlikte
-      seyahat — yanlış pozitif tuzağı, klonlanmış plaka, rota/zaman
-      anomalisi; her okuma gerçek OCR checkpoint'inden geçiriliyor —
-      `synth_scenario.py`)
-- [x] Bulanık (fuzzy) aranan araç eşleştirme (Levenshtein ≤1, OCR
-      karışıklıklarına toleranslı: 0↔O, 1↔İ, 8↔B, 5↔S; tam metin
-      eşleşmesine göre recall %50→%90 (severity 0.6), %33→%67
-      (severity 0.8), sıfır kesinlik bedeliyle — `watchlist.py`,
-      `eval_watchlist.py`)
-- [x] Konvoy tespiti (trafik hacmine göre normalize edilmiş kenar ağırlığı
-      + en az 2 farklı ortak nokta şartı; rutin birlikte seyahat eden
-      çifti 7 rastgele tohumda 0 yanlış pozitifle eliyor — `convoy.py`,
-      `eval_convoy.py`)
-- [x] Plaka klonlama tespiti (iki nokta arasında fiziksel olarak imkânsız
-      hız, > 150 km/h; planted klonu 7 tohumda 0 yanlış pozitifle
-      yakalıyor — `cloning.py`, `eval_cloning.py`)
-- [x] Rota/zaman anomali tespiti (aracın kendi geçmişine göre alışılmadık
-      nokta/saat; 8 tohumda 15/16 planted anomaliyi 0 yanlış pozitifle
-      yakalıyor — `anomalies.py`, `eval_anomalies.py`)
-- [x] Analitik uçları FastAPI'de (`/konvoylar`, `/klonlar`, `/anomaliler`,
-      `/aranan/eslesmeler`) — eval script'leriyle aynı fonksiyonlar,
-      veritabanından canlı okuyor (`app/main.py`)
-- [x] Vue dashboard (`dashboard/`) — dört analitik ucun tamamı için görünüm,
-      docker-compose'a bağlı
+```mermaid
+flowchart LR
+    SRC["Video / görüntü<br/>kaynağı"] --> DET["YOLO26<br/>plaka tespiti"]
+    DET --> OCR["CRNN + CTC<br/>OCR"]
+    OCR --> FMT["Türk plaka format<br/>doğrulama"]
+    FMT --> DB[("PostgreSQL<br/>GecisKaydi")]
+
+    DB --> CONV["convoy.py<br/>konvoy tespiti"]
+    DB --> CLONE["cloning.py<br/>klonlama tespiti"]
+    DB --> ANOM["anomalies.py<br/>rota/zaman anomalisi"]
+    DB --> WATCH["watchlist.py<br/>fuzzy eşleştirme"]
+
+    CONV --> API["FastAPI<br/>analitik uçları"]
+    CLONE --> API
+    ANOM --> API
+    WATCH --> API
+    API --> DASH["Vue 3<br/>dashboard"]
+
+    classDef algilama fill:#eef2ff,stroke:#3987e5,color:#1e1b4b;
+    classDef analitik fill:#fdf2f8,stroke:#d55181,color:#500724;
+    classDef arayuz fill:#f0fdf4,stroke:#16a34a,color:#052e16;
+
+    class SRC,DET,OCR,FMT algilama;
+    class DB,CONV,CLONE,ANOM,WATCH analitik;
+    class API,DASH arayuz;
+```
+
+## Özellikler
+
+- Plaka tespiti — YOLO26 fine-tune
+- Plaka OCR — CRNN + CTC
+- Track-seviyesi karakter oylaması
+- Uçtan uca tespit + OCR pipeline'ı (`pipeline.py`)
+- Planted olaylı sentetik senaryo üreteci (`synth_scenario.py`)
+- Bulanık (fuzzy) aranan araç eşleştirme
+- Konvoy tespiti — trafik hacmine göre normalize edilmiş ilişki grafiği
+- Plaka klonlama tespiti — fiziksel olarak imkânsız seyahat hızı
+- Rota/zaman anomali tespiti
+- FastAPI analitik servisi ve Vue 3 dashboard
+
+## Dashboard
+
+![Dashboard ekran görüntüsü](dashboard/screenshot.jpg)
+
+`dashboard/`, dört analitik ucun (`/konvoylar`, `/klonlar`, `/anomaliler`,
+`/aranan/eslesmeler`) her biri için canlı veri çeken bir sekme olan bir
+Vue 3 + Vite paneli. Router, state kütüphanesi, UI/chart kütüphanesi yok;
+sekme geçişi düz bir `ref`, grafikler el yazımı CSS/SVG.
+
+En basit yol — `docker compose up --build` zaten `dashboard`'ı da
+başlatıyor: http://localhost:5173. Ayrı ayrı çalıştırmak için:
+
+```bash
+# API (ayrı bir terminalde)
+python3 -m venv .venv-api && source .venv-api/bin/activate
+pip install -r requirements-api.txt
+uvicorn app.main:app --reload
+
+# Dashboard
+cd dashboard
+npm install
+npm run dev          # http://localhost:5173
+```
+
+Sayfa tek bir senaryoyla oldukça boş görünür; zengin bir demo veri seti
+için `dashboard/README.md`'deki çoklu-tohum yükleme tarifine bakılabilir.
+
+## Sonuçlar
+
+| Bileşen | Metrik | Sonuç |
+|---|---|---|
+| Plaka tespiti | mAP50 / mAP50-95 | 0.993 / 0.882 |
+| Plaka OCR (gerçekçi bozulma) | Exact-match | %90–96 |
+| Plaka OCR (gerçek fotoğraf, n=20) | Exact-match | %25 |
+| Karakter oylaması | Tek kareye göre kazanç | +12 ila +44 puan |
+| Aranan araç eşleştirme (fuzzy) | Recall kazancı | %50→%90 (severity 0.6) |
+| Konvoy tespiti | Yanlış pozitif | 0 / 7 tohum |
+| Plaka klonlama tespiti | Yanlış pozitif | 0 / 7 tohum |
+| Rota/zaman anomali tespiti | Yakalama / yanlış pozitif | 15/16, 0 (8 tohum) |
+
+Her rakamın nasıl ölçüldüğü (script, metodoloji, örneklem büyüklüğü) için
+[`PROJE_RAPORU.md`](PROJE_RAPORU.md).
 
 ## Kurulum
 
@@ -112,33 +153,6 @@ python3 eval_anomalies.py --scenario data/scenario
 Her `eval_*.py`, kendi modülünü senaryonun `ground_truth.json` dosyasındaki
 planted olaylara karşı ölçüp precision/recall rakamı basar.
 
-### Dashboard
-
-![Dashboard ekran görüntüsü](dashboard/screenshot.jpg)
-
-`dashboard/`, dört analitik ucun (`/konvoylar`, `/klonlar`, `/anomaliler`,
-`/aranan/eslesmeler`) her biri için canlı veri çeken bir sekme olan bir
-Vue 3 + Vite paneli. Router, state kütüphanesi, UI/chart kütüphanesi yok;
-sekme geçişi düz bir `ref`, grafikler el yazımı CSS/SVG.
-
-En basit yol -- `docker compose up --build` zaten `dashboard`'ı da
-başlatıyor: http://localhost:5173. Ayrı ayrı çalıştırmak için:
-
-```bash
-# API (ayrı bir terminalde)
-python3 -m venv .venv-api && source .venv-api/bin/activate
-pip install -r requirements-api.txt
-uvicorn app.main:app --reload
-
-# Dashboard
-cd dashboard
-npm install
-npm run dev          # http://localhost:5173
-```
-
-Sayfa tek bir senaryoyla oldukça boş görünür; zengin bir demo veri seti
-için `dashboard/README.md`'deki çoklu-tohum yükleme tarifine bakılabilir.
-
 ## Proje yapısı
 
 ```
@@ -164,10 +178,10 @@ platetrace/
 ├── eval_voting.py           # Oylama vs. tek kare OCR karşılaştırması
 ├── pipeline.py              # Tespit+OCR -> GecisKaydi
 ├── synth_scenario.py        # Planted olaylı analitik senaryo üreteci
-├── watchlist.py             # Bulanık aranan araç eşleştirme
-├── convoy.py                # Konvoy tespiti
-├── cloning.py               # Plaka klonlama tespiti
-├── anomalies.py             # Rota/zaman anomali tespiti
+├── watchlist.py              # Bulanık aranan araç eşleştirme
+├── convoy.py                 # Konvoy tespiti
+├── cloning.py                # Plaka klonlama tespiti
+├── anomalies.py              # Rota/zaman anomali tespiti
 └── eval_watchlist.py, eval_convoy.py, eval_cloning.py, eval_anomalies.py
                               # Her analitik modül için ground-truth'a karşı ölçüm
 ```
